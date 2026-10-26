@@ -8,9 +8,16 @@
             char telephone[20];
           struct patient *next;
     }patient;
-
+    typedef struct appointment{
+    int numero;
+    int patientID;
+    char date[11];
+    char heure[6];
+    char motif[100];
+    struct appointment *next;
+} appointment;
+appointment *headappointment = NULL; 
 patient *recherpatient(patient *current, int ID);
-
 
     void ajoutpatient(patient **head){
         patient *newpatient = malloc(sizeof(patient));
@@ -105,16 +112,72 @@ void modifierpatient(patient *head) {
     printf("Patient modifie avec succes !\n");
 }
 
+void annulerRdvPatient(appointment **head, int patientID) {
+    appointment *current = *head;
+    appointment *previous = NULL;
+
+    while (current != NULL) {
+        if (current->patientID == patientID) {
+            appointment *temp = current;
+
+            if (previous == NULL) {
+                *head = current->next;
+            } else {
+                previous->next = current->next;
+            }
+
+            current = current->next;
+            free(temp);
+        } else {
+            previous = current;
+            current = current->next;
+        }
+    }
+}
+
+void supprimerpatient(patient **head){
+int ID;
+printf("Entre l'ID du patient a supprimer :");
+scanf("%d", &ID);
+
+patient *current = *head ;
+patient *previous = NULL ;
+
+while(current != NULL && current->ID !=ID){
+    previous = current ;
+    current = current->next;
+}
+if (current == NULL){
+    printf("Patient introuvable !\n");
+    return ;
+} 
+annulerRdvPatient(&headappointment, ID);
+
+ if(previous == NULL ){
+*head = current->next;
+} 
+else{
+    previous->next = current->next ;
+}
+free(current);
+printf("Patient supprimer avec succes\n");
+
+}
+
+
+
+
 int main(){
     patient *headpatient = NULL;
-
+       
     int choix;
 printf("\n=== GESTION DES PATIENTS ===\n");
 printf("1. Ajouter un patient\n");
 printf("2. Afficher les patients\n");
 printf("3. Rechercher un patient par ID\n");
-printf("4.Modifier les informations d'un patient\n");
-printf("5. Quitter\n");
+printf("4. Modifier les informations d'un patient\n");
+printf("5. Supprimer un patient\n");
+printf("6. Quitter\n");
 
 printf("Votre choix : ");
 do{
@@ -150,14 +213,14 @@ else if (choix == 4) {
     modifierpatient(headpatient);
 }
 else if (choix == 5) {
-    printf("Au revoir !\n");
+   supprimerpatient(&headpatient);
 }
-else if (choix == 5) {
+else if (choix == 6) {
     printf("Au revoir!\n");
 }
 else {
     printf("Choix invalide!\n");
-} }while (choix !=5);
+} }while (choix !=6);
 
 
     return 0;
