@@ -16,10 +16,11 @@
     char heure[6];
     char motif[100];
     struct appointment *next;
-} appointment;
+    } appointment;
 
 appointment *headappointment = NULL; 
 patient *recherpatient(patient *current, int ID);
+
 void rechercherParNom(patient *head);
 
     void ajoutpatient(patient **head){
@@ -225,11 +226,37 @@ printf("Patient supprimer avec succes\n");
 
 
 
+void afficherPresentation(void) {
+
+    printf("\n");
+    printf("========================================\n");
+    printf("       USTHB - COMPUTER SCIENCE\n");
+    printf("          2ND YEAR - ASD\n");
+    printf("========================================\n\n");
+
+    printf(" PATIENT AND APPOINTMENT MANAGEMENT\n");
+    printf(" Project 5 | Groupe 28\n\n");
+
+    printf(" GROUP MEMBERS\n");
+    printf("------------------------------\n");
+    printf(" Djafercherif  | Oumeima\n");
+    printf(" Oueddane      | Loubna\n");
+    printf(" Mohammed i    | Ilyes\n");
+    printf(" Douifi        | Houssem eddine\n");
+    printf("------------------------------\n\n");
+
+    printf(" Press ENTER to continue...");
+    getchar();
+}
+
+
+
 
 int main(){
     patient *headpatient = NULL;
        
     int choix;
+    afficherPresentation();
 printf("\n=== GESTION DES PATIENTS ===\n");
 printf("1. Ajouter un patient\n");
 printf("2. Afficher les patients\n");
