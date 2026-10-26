@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
   typedef struct patient{
          int ID ;
          char nom[50];
@@ -16,8 +17,10 @@
     char motif[100];
     struct appointment *next;
 } appointment;
+
 appointment *headappointment = NULL; 
 patient *recherpatient(patient *current, int ID);
+void rechercherParNom(patient *head);
 
     void ajoutpatient(patient **head){
         patient *newpatient = malloc(sizeof(patient));
@@ -62,6 +65,62 @@ patient *recherpatient(patient *current, int ID);
     }
 
     return NULL;
+}
+
+void rechercherParNom(patient *head) {
+    char nomRecherche[50];
+    int compteur = 0;
+    int idRecherche;
+
+    patient *current = head;
+
+    printf("Entrer le nom du patient a rechercher : ");
+    scanf("%49s", nomRecherche);
+
+   
+    while (current != NULL) {
+        if (strcmp(current->nom, nomRecherche) == 0) {
+            printf("ID: %d | Nom: %s | Prenom: %s\n",
+                   current->ID, current->nom, current->prenom);
+            compteur++;
+        }
+
+        current = current->next;
+    }
+
+    if (compteur == 0) {
+        printf("Aucun patient trouve.\n");
+        return;
+    }
+
+    if (compteur == 1) {
+        printf("Un seul patient trouve.\n");
+        return;
+    }
+
+    /* Several patients have the same name */
+    printf("Plusieurs patients ont ce nom.\n");
+    printf("Entrer l'ID du patient recherche : ");
+    scanf("%d", &idRecherche);
+
+    patient *result = recherpatient(head, idRecherche);
+
+    if (result == NULL) {
+        printf("Aucun patient avec cet ID.\n");
+        return;
+    }
+
+    if (strcmp(result->nom, nomRecherche) != 0) {
+        printf("Cet ID ne correspond pas au nom recherche.\n");
+        return;
+    }
+
+    printf("\nPatient selectionne :\n");
+    printf("ID: %d\n", result->ID);
+    printf("Nom: %s\n", result->nom);
+    printf("Prenom: %s\n", result->prenom);
+    printf("Date de naissance: %s\n", result->datenaissance);
+    printf("Telephone: %s\n", result->telephone);
 }
 
     void display(patient *head){
@@ -175,9 +234,10 @@ printf("\n=== GESTION DES PATIENTS ===\n");
 printf("1. Ajouter un patient\n");
 printf("2. Afficher les patients\n");
 printf("3. Rechercher un patient par ID\n");
-printf("4. Modifier les informations d'un patient\n");
-printf("5. Supprimer un patient\n");
-printf("6. Quitter\n");
+printf("4. Rechercher un patient par son nom\n");
+printf("5. Modifier les informations d'un patient\n");
+printf("6. Supprimer un patient\n");
+printf("7. Quitter\n");
 
 printf("Votre choix : ");
 do{
@@ -210,17 +270,20 @@ else if (choix == 3) {
     }
 }
 else if (choix == 4) {
-    modifierpatient(headpatient);
+    rechercherParNom(headpatient);
 }
 else if (choix == 5) {
-   supprimerpatient(&headpatient);
+    modifierpatient(headpatient);
 }
 else if (choix == 6) {
+   supprimerpatient(&headpatient);
+}
+else if (choix == 7) {
     printf("Au revoir!\n");
 }
 else {
     printf("Choix invalide!\n");
-} }while (choix !=6);
+} }while (choix !=7);
 
 
     return 0;
