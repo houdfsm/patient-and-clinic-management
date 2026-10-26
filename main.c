@@ -1,0 +1,131 @@
+#include<stdio.h>
+#include<stdlib.h>
+  typedef struct patient{
+         int ID ;
+         char nom[50];
+         char prenom[50];
+         char datenaissance[11];
+            char telephone[20];
+          struct patient *next;
+    }patient;
+
+patient *recherpatient(patient *current, int ID);
+
+
+    void ajoutpatient(patient **head){
+        patient *newpatient = malloc(sizeof(patient));
+        if ( newpatient == NULL){
+            printf("error");
+            return ;
+        }
+
+        printf("Entre l'ID du patient :");
+        scanf("%d", &newpatient->ID);
+
+       patient *result = recherpatient(*head, newpatient->ID);
+        if (result != NULL) {
+    printf("Erreur : cet ID existe deja !\n");
+    free(newpatient);
+    return;
+}
+
+        printf("Entrer le nom du patient :");
+        scanf("%49s", &newpatient->nom);
+
+        printf("Entrer le prenom du patient :");
+        scanf("%49s", &newpatient->prenom);
+
+        printf("Entrer la date de naissance du patient :");
+        scanf("%10s", &newpatient->datenaissance);
+
+        printf("Entrer le numero de telephone du patient :");
+        scanf("%19s", &newpatient->telephone);
+    
+
+        newpatient->next = *head ;
+        *head = newpatient;
+    }
+    patient *recherpatient(patient *current, int ID) {
+    while (current != NULL) {
+        if (current->ID == ID) {
+            return current;
+        }
+
+        current = current->next;
+    }
+
+    return NULL;
+}
+
+    void display(patient *head){
+      
+    patient *current = head;
+
+    while (current != NULL) {
+        // We'll display the patient's information here.
+    printf("ID: %d\n", current->ID);
+
+    printf("Nom: %s\n", current->nom);
+
+    printf("Prenom: %s\n", current->prenom);
+
+    printf("Date de naissance: %s\n", current->datenaissance);
+
+    printf("Telephone: %s\n", current->telephone);
+
+        current = current->next;
+    }
+}
+
+   
+
+int main(){
+    patient *headpatient = NULL;
+
+    int choix;
+printf("\n=== GESTION DES PATIENTS ===\n");
+printf("1. Ajouter un patient\n");
+printf("2. Afficher les patients\n");
+printf("3. Rechercher un patient par ID\n");
+printf("4. Quitter\n");
+
+printf("Votre choix : ");
+do{
+scanf("%d", &choix);
+
+  if (choix == 1) {
+    ajoutpatient(&headpatient);
+}
+else if (choix == 2) {
+    display(headpatient);
+}
+else if (choix == 3) {
+    int id;
+
+    printf("Entrer l'ID du patient a rechercher : ");
+    scanf("%d", &id);
+
+    patient *result = recherpatient(headpatient, id);
+
+    if (result != NULL) {
+        printf("Patient trouve !\n");
+        printf("ID : %d\n", result->ID);
+        printf("Nom : %s\n", result->nom);
+        printf("Prenom : %s\n", result->prenom);
+        printf("Date de naissance : %s\n", result->datenaissance);
+        printf("Telephone : %s\n", result->telephone);
+    }
+    else {
+        printf("Patient introuvable !\n");
+    }
+}
+else if (choix == 4) {
+    printf("Au revoir!\n");
+}
+else {
+    printf("Choix invalide!\n");
+} }while (choix !=4);
+
+
+    return 0;
+}
