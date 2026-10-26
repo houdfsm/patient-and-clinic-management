@@ -77,7 +77,33 @@ patient *recherpatient(patient *current, int ID);
     }
 }
 
-   
+void modifierpatient(patient *head) {
+    int id;
+
+    printf("Entrer l'ID du patient a modifier : ");
+    scanf("%d", &id);
+
+    patient *result = recherpatient(head, id);
+
+    if (result == NULL) {
+        printf("Patient introuvable !\n");
+        return;
+    }
+
+    printf("Entrer le nouveau nom : ");
+    scanf("%49s", result->nom);
+
+    printf("Entrer le nouveau prenom : ");
+    scanf("%49s", result->prenom);
+
+    printf("Entrer la nouvelle date de naissance : ");
+    scanf("%10s", result->datenaissance);
+
+    printf("Entrer le nouveau numero de telephone : ");
+    scanf("%19s", result->telephone);
+
+    printf("Patient modifie avec succes !\n");
+}
 
 int main(){
     patient *headpatient = NULL;
@@ -87,7 +113,8 @@ printf("\n=== GESTION DES PATIENTS ===\n");
 printf("1. Ajouter un patient\n");
 printf("2. Afficher les patients\n");
 printf("3. Rechercher un patient par ID\n");
-printf("4. Quitter\n");
+printf("4.Modifier les informations d'un patient\n");
+printf("5. Quitter\n");
 
 printf("Votre choix : ");
 do{
@@ -120,11 +147,17 @@ else if (choix == 3) {
     }
 }
 else if (choix == 4) {
+    modifierpatient(headpatient);
+}
+else if (choix == 5) {
+    printf("Au revoir !\n");
+}
+else if (choix == 5) {
     printf("Au revoir!\n");
 }
 else {
     printf("Choix invalide!\n");
-} }while (choix !=4);
+} }while (choix !=5);
 
 
     return 0;
