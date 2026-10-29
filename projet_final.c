@@ -1,4 +1,4 @@
-#include<stdio.h>
+﻿#include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
 #include<ctype.h>
@@ -469,7 +469,7 @@ printf("Rendez-vous annule avec succes.\n");
 
 void modifierRDV(ListeRDV l_rdv) {
     int id;
-    printf("Entrez le numéro du rendez-vous à modifier : ");
+    printf("Entrez le numero du rendez-vous a modifier : ");
     scanf("%d", &id);
 
     // find the appointment node 
@@ -493,7 +493,7 @@ void modifierRDV(ListeRDV l_rdv) {
     if (choix == 1) {
         char nouvelle_date[15];
         char nouvelle_heure[10];
-        printf("Nouvelle date (YYYY-MM-DD) : ");
+        printf("Nouvelle date (JJ/MM/AAAA) : ");
         scanf("%s", nouvelle_date);
         printf("Nouvelle heure (HH:MM) : ");
         scanf("%s", nouvelle_heure);
@@ -505,7 +505,7 @@ void modifierRDV(ListeRDV l_rdv) {
                 if (temp->num_rdv != id && 
                     strcmp(temp->date, nouvelle_date) == 0 && 
                     strcmp(temp->heure, nouvelle_heure) == 0) {
-                    printf("Erreur : Ce créneau horaire est déjà pris !\n");
+                    printf("Erreur : Ce creneau horaire est deja pris !\n");
                     return;
                 }
                 temp = temp->suiv;
@@ -515,7 +515,7 @@ void modifierRDV(ListeRDV l_rdv) {
         // Apply date & time changes
         strcpy(p->date, nouvelle_date);
         strcpy(p->heure, nouvelle_heure);
-        printf("Date et heure modifiées avec succès !\n");
+        printf("Date et heure modifiees avec succes !\n");
 
     } else if (choix == 2) {
         char nouveau_motif[100];
@@ -524,7 +524,7 @@ void modifierRDV(ListeRDV l_rdv) {
 
         // Apply motif change
         strcpy(p->motif, nouveau_motif);
-        printf("Motif modifié avec succès !\n");
+        printf("Motif modifie avec succes !\n");
 
     } else {
         printf("Choix invalide.\n");
@@ -537,7 +537,7 @@ void modifierRDV(ListeRDV l_rdv) {
 
 void afficherRDVJour(ListeRDV l_rdv) {
     char date_cherche[15];
-    printf("Entrez la date à rechercher (YYYY-MM-DD) : ");
+    printf("Entrez la date a rechercher (JJ/MM/AAAA) : ");
     scanf("%s", date_cherche);
 
     // count matching appointments
@@ -550,7 +550,7 @@ void afficherRDVJour(ListeRDV l_rdv) {
         p = p->suiv;
     }
     if (count == 0) {
-        printf("Aucun rendez-vous prévu pour cette date.\n");
+        printf("Aucun rendez-vous prevu pour cette date.\n");
         return;
     }
 
@@ -577,7 +577,7 @@ void afficherRDVJour(ListeRDV l_rdv) {
     }
 
     // display sorted appointments
-    printf("\n--- Rendez-vous pour le %s (Classés par heure) ---\n", date_cherche);
+    printf("\n--- Rendez-vous pour le %s (Classes par heure) ---\n", date_cherche);
     for (int i = 0; i < count; i++) {
         printf("RDV #%d | Patient #%d | Heure: %s | Motif: %s\n", 
                tab[i]->num_rdv, tab[i]->num_patient, tab[i]->heure, tab[i]->motif);
@@ -591,7 +591,7 @@ void afficherRDVJour(ListeRDV l_rdv) {
 
 void afficherRDVPatient(ListeRDV l_rdv) {
     int id_patient;
-    printf("Entrez le numéro du patient : ");
+    printf("Entrez l'ID du patient : ");
     scanf("%d", &id_patient);
 
     // count matching appointments for this patient
@@ -604,7 +604,7 @@ void afficherRDVPatient(ListeRDV l_rdv) {
         p = p->suiv;
     }
     if (count == 0) {
-        printf("Ce patient n'a aucun rendez-vous enregistré.\n");
+        printf("Ce patient n'a aucun rendez-vous enregistre.\n");
         return;
     }
 
@@ -644,6 +644,136 @@ void afficherRDVPatient(ListeRDV l_rdv) {
 
 
 
+// ================= PARTIE 4 : ILYES (Qst 10, 11 et 12) =================
+
+// PARTIE 10 : Rechercher les creneaux disponibles
+
+void rechercherCreneauxDisponibles(rdv *head, const char *date) {
+    int h, m, occupe, nb_libres = 0;
+    rdv *courant;
+    char creneau[6];
+
+    printf("\n========================================\n");
+    printf("  Creneaux pour le %s\n", date);
+    printf("========================================\n");
+
+    for (h = heure_debut; h <= heure_fin; h++) {
+        for (m = 0; m < 60; m += 30) {
+            if (h == heure_fin && m > 0) break;
+            sprintf(creneau, "%02d:%02d", h, m);
+            occupe = 0;
+            courant = head;
+            while (courant != NULL) {
+                if (strcmp(courant->date, date) == 0 && strcmp(courant->heure, creneau) == 0) {
+                    occupe = 1;
+                    break;
+                }
+                courant = courant->suivant;
+            }
+            if (occupe == 0) {
+                printf("  [LIBRE]   %s\n", creneau);
+                nb_libres++;
+            } else {
+                printf("  [OCCUPE]  %s\n", creneau);
+            }
+        }
+    }
+
+    printf("----------------------------------------\n");
+    if (nb_libres == 0)
+        printf("  Aucun creneau disponible.\n");
+    else
+        printf("  %d creneau(x) disponible(s).\n", nb_libres);
+    printf("========================================\n");
+}
+
+// PARTIE 11 : Calculer des statistiques
+
+int compterPatients(patient *head) {
+    int compteur = 0;
+    patient *courant = head;
+    while (courant != NULL) {
+        compteur++;
+        courant = courant->next;
+    }
+    return compteur;
+}
+
+int compterRDV(rdv *head) {
+    int compteur = 0;
+    rdv *courant = head;
+    while (courant != NULL) {
+        compteur++;
+        courant = courant->suivant;
+    }
+    return compteur;
+}
+
+int compterRDVParDate(rdv *head, const char *date) {
+    int compteur = 0;
+    rdv *courant = head;
+    while (courant != NULL) {
+        if (strcmp(courant->date, date) == 0)
+            compteur++;
+        courant = courant->suivant;
+    }
+    return compteur;
+}
+
+void afficherStatistiques(patient *listePatients, rdv *listeRDV) {
+    int nbPatients, nbRDV, nbRDVJour;
+    char date[15];
+
+    nbPatients = compterPatients(listePatients);
+    nbRDV = compterRDV(listeRDV);
+
+    printf("\n========================================\n");
+    printf("         STATISTIQUES CLINIQUE\n");
+    printf("========================================\n");
+    printf("  Nombre total de patients     : %d\n", nbPatients);
+    printf("  Nombre total de rendez-vous  : %d\n", nbRDV);
+    printf("----------------------------------------\n");
+    printf("  Entrez une date (JJ/MM/AAAA) pour\n");
+    printf("  voir les RDV de cette journee : ");
+    scanf("%s", date);
+
+    nbRDVJour = compterRDVParDate(listeRDV, date);
+    printf("\n  RDV prevus le %s : %d\n", date, nbRDVJour);
+    printf("========================================\n");
+}
+
+// PARTIE 12 : Quitter le programme (liberer la memoire)
+
+void libererListePatients(patient **head) {
+    patient *courant = *head;
+    patient *suiv;
+    while (courant != NULL) {
+        suiv = courant->next;
+        free(courant);
+        courant = suiv;
+    }
+    *head = NULL;
+}
+
+void libererListeRDV(rdv **head) {
+    rdv *courant = *head;
+    rdv *suiv;
+    while (courant != NULL) {
+        suiv = courant->suivant;
+        free(courant);
+        courant = suiv;
+    }
+    *head = NULL;
+}
+
+void quitterProgramme(patient **listePatients, rdv **listeRDV) {
+    printf("\n  Liberation de la memoire...\n");
+    libererListePatients(listePatients);
+    libererListeRDV(listeRDV);
+    printf("  Memoire liberee avec succes.\n");
+    printf("  Au revoir !\n");
+}
+
 // ================= MAIN (Houssem) =================
 
 int main(){
@@ -663,7 +793,9 @@ printf("8. Annuler un rendez-vous\n");
 printf("9. Modifier un rendez-vous\n");
 printf("10. Afficher les rendez-vous d'un jour\n");
 printf("11. Afficher les rendez-vous d'un patient\n");
-printf("12. Quitter\n");
+printf("12. Rechercher les creneaux disponibles\n");
+printf("13. Statistiques\n");
+printf("14. Quitter\n");
 
 printf("Votre choix : ");
 do{
@@ -722,11 +854,20 @@ else if (choix == 11) {
     afficherRDVPatient(headappointment);
 }
 else if (choix == 12) {
-    printf("Au revoir!\n");
+    char date[15];
+    printf("Entrez la date (JJ/MM/AAAA) : ");
+    scanf("%s", date);
+    rechercherCreneauxDisponibles(headappointment, date);
+}
+else if (choix == 13) {
+    afficherStatistiques(headpatient, headappointment);
+}
+else if (choix == 14) {
+    quitterProgramme(&headpatient, &headappointment);
 }
 else {
     printf("Choix invalide!\n");
-} }while (choix !=12);
+} }while (choix !=14);
 
 
     return 0;
