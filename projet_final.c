@@ -306,7 +306,7 @@ if(dateStr[2]!='/'||dateStr[5]!='/')return 0;
 int jour=atoi(dateStr);
 int mois=atoi(dateStr+3);
 int annee=atoi(dateStr+6);
-if(jour<1||jour>31||mois<1||mois>12||annee<0)return 0;
+if(jour<1||jour>31||mois<1||mois>12||annee<1900)return 0;
 strcpy(dest,dateStr);
 return 1;
 }
