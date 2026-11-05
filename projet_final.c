@@ -32,550 +32,6 @@ appointment *headappointment = NULL;
 
 // CONSTANTES DES HORAIRES DU CABINET
 
-#define heure_debut 8
-#define heure_fin 18
-
-// OUTILS DE SAISIE ET DE FLUX
-
-void lire(char *dest, int taille) {
-    if (fgets(dest, taille, stdin) == NULL) {
-        dest[0] = '\0';
-        return;
-    }
-    dest[strcspn(dest, "\r\n")] = '\0';
-}
-
-int lireEntier(void) {
-    char buf[50];
-    lire(buf, sizeof(buf));
-    return (int)strtol(buf, NULL, 10);
-}
-
-int memeTexte(const char *a, const char *b) {
-    while (*a && *b) {
-        if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) return 0;
-        a++; b++;
-    }
-    return *a == *b;
-}
-
-// OPTION : Validation du calendrier et des annees bissextiles
-
-int estBissextile(int annee) {
-    return (annee % 4 == 0 && annee % 100 != 0) || (annee % 400 == 0);
-}
-
-int joursDansMois(int mois, int annee) {
-    if (mois == 2) {
-        return estBissextile(annee) ? 29 : 28;
-    }
-    if (mois == 4 || mois == 6 || mois == 9 || mois == 11) {
-        return 30;
-    }
-    return 31;
-}
-
-int dateValide(const char *dateStr, char *dest) {
-    if (strlen(dateStr) != 10) return 0;
-    if (dateStr[2] != '/' || dateStr[5] != '/') return 0;
-    for (int i = 0; i < 10; i++) {
-        if (i == 2 || i == 5) continue;
-        if (!isdigit((unsigned char)dateStr[i])) return 0;
-    }
-    int jour = atoi(dateStr);
-    int mois = atoi(dateStr + 3);
-    int annee = atoi(dateStr + 6);
-
-    if (mois < 1 || mois > 12) return 0;
-    if (jour < 1 || jour > joursDansMois(mois, annee)) return 0;
-    if (annee < 1900 || annee > 2100) return 0;
-
-    if (dest) strcpy(dest, dateStr);
-    return 1;
-}
-
-// OPTION : Calcul automatique de l'age a partir de la date de naissance
-
-int calculerAge(const char *datenaissance) {
-    int jour, mois, annee;
-    if (sscanf(datenaissance, "%d/%d/%d", &jour, &mois, &annee) != 3) return 0;
-
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    int j_actuel = t->tm_mday;
-    int m_actuel = t->tm_mon + 1;
-    int a_actuel = t->tm_year + 1900;
-
-    int age = a_actuel - annee;
-    if (m_actuel < mois || (m_actuel == mois && j_actuel < jour)) {
-        age--;
-    }
-    return (age >= 0) ? age : 0;
-}
-
-// OPTION : Verification des dates dans le passe
-
-int dateDansLePasse(const char *dateStr, const char *heureStr) {
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    int j_actuel = t->tm_mday;
-    int m_actuel = t->tm_mon + 1;
-    int a_actuel = t->tm_year + 1900;
-    int h_actuel = t->tm_hour;
-    int min_actuel = t->tm_min;
-
-    int jour = atoi(dateStr);
-    int mois = atoi(dateStr + 3);
-    int annee = atoi(dateStr + 6);
-
-    int cle_saisie = annee * 10000 + mois * 100 + jour;
-    int cle_auj = a_actuel * 10000 + m_actuel * 100 + j_actuel;
-
-    if (cle_saisie < cle_auj) return 1;
-    if (cle_saisie == cle_auj && heureStr != NULL && strlen(heureStr) == 5) {
-        int h = atoi(heureStr);
-        int m = atoi(heureStr + 3);
-        if (h * 60 + m <= h_actuel * 60 + min_actuel) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-// OPTION : Validation de la date de naissance (non future)
-
-int dateNaissanceValide(const char *dateStr, char *dest) {
-    if (!dateValide(dateStr, dest)) return 0;
-
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    int j_actuel = t->tm_mday;
-    int m_actuel = t->tm_mon + 1;
-    int a_actuel = t->tm_year + 1900;
-
-    int jour = atoi(dateStr);
-    int mois = atoi(dateStr + 3);
-    int annee = atoi(dateStr + 6);
-
-    int cle_naiss = annee * 10000 + mois * 100 + jour;
-    int cle_auj = a_actuel * 10000 + m_actuel * 100 + j_actuel;
-
-    if (cle_naiss > cle_auj) return -1;
-    if (annee < 1900) return -2;
-    return 1;
-}
-
-// OPTION : Validation du telephone (10 chiffres)
-
-int telephoneValide(const char *tel, char *dest) {
-    if (strlen(tel) != 10) return 0;
-    for (int i = 0; i < 10; i++) {
-        if (!isdigit((unsigned char)tel[i])) return 0;
-    }
-    if (dest) strcpy(dest, tel);
-    return 1;
-}
-
-// OPTION : Validation de l'heure et des creneaux horaires
-
-int heureValide(const char *heureStr, char *dest) {
-    if (strlen(heureStr) != 5) return 0;
-    if (heureStr[2] != ':') return 0;
-    if (!isdigit((unsigned char)heureStr[0]) || !isdigit((unsigned char)heureStr[1]) ||
-        !isdigit((unsigned char)heureStr[3]) || !isdigit((unsigned char)heureStr[4])) {
-        return 0;
-    }
-    int heures = atoi(heureStr);
-    int minutes = atoi(heureStr + 3);
-
-    if (heures < 0 || heures > 23 || minutes < 0 || minutes > 59) return 0;
-    if (minutes != 0 && minutes != 30) return 0;
-    if (heures < heure_debut || heures > heure_fin || (heures == heure_fin && minutes > 0)) {
-        return 0;
-    }
-
-    if (dest) strcpy(dest, heureStr);
-    return 1;
-}
-
-int cleDate(const char *d) {
-    int j, m, a;
-    sscanf(d, "%d/%d/%d", &j, &m, &a);
-    return a * 10000 + m * 100 + j;
-}
-
-int cleHeure(const char *h) {
-    int hh, mm;
-    sscanf(h, "%d:%d", &hh, &mm);
-    return hh * 60 + mm;
-}
-
-// SAISIES SECURISEES
-
-void saisirDateRDV(const char *message, char *dest) {
-    char saisie[50];
-    while (1) {
-        printf("%s", message);
-        lire(saisie, sizeof(saisie));
-        if (!dateValide(saisie, dest)) {
-            printf("  [!] Date invalide (format JJ/MM/AAAA, ex: 15/11/2026).\n");
-            continue;
-        }
-        if (dateDansLePasse(dest, NULL)) {
-            printf("  [!] Erreur : Impossible de programmer un rendez-vous dans le passe !\n");
-            continue;
-        }
-        break;
-    }
-}
-
-void saisirHeureRDV(const char *message, const char *date, char *dest) {
-    char saisie[50];
-    while (1) {
-        printf("%s", message);
-        lire(saisie, sizeof(saisie));
-        if (!heureValide(saisie, dest)) {
-            printf("  [!] Heure invalide (%02d:00 a %02d:00, par pas de 30 min, ex: 09:30).\n", heure_debut, heure_fin);
-            continue;
-        }
-        if (dateDansLePasse(date, dest)) {
-            printf("  [!] Erreur : Ce creneau horaire est deja passe aujourd'hui !\n");
-            continue;
-        }
-        break;
-    }
-}
-
-void saisirDateNaissance(const char *message, char *dest) {
-    char saisie[50];
-    while (1) {
-        printf("%s", message);
-        lire(saisie, sizeof(saisie));
-        int res = dateNaissanceValide(saisie, dest);
-        if (res == -1) {
-            printf("  [!] Erreur : La date de naissance ne peut pas etre dans le futur !\n");
-            continue;
-        }
-        if (res == -2 || res == 0) {
-            printf("  [!] Date invalide (format JJ/MM/AAAA, ex: 25/08/2001).\n");
-            continue;
-        }
-        break;
-    }
-}
-
-void saisirTelephone(const char *message, char *dest) {
-    char saisie[50];
-    while (1) {
-        printf("%s", message);
-        lire(saisie, sizeof(saisie));
-        if (!telephoneValide(saisie, dest)) {
-            printf("  [!] Numero invalide : doit comporter exactement 10 chiffres (ex: 0551234567).\n");
-            continue;
-        }
-        break;
-    }
-}
-
-// RECHERCHES DE PATIENTS ET DE RENDEZ-VOUS
-
-patient *recherpatient(patient *current, int ID) {
-    while (current != NULL) {
-        if (current->ID == ID) return current;
-        current = current->next;
-    }
-    return NULL;
-}
-
-patient *trouverPatient(patient *head, int ID) {
-    return recherpatient(head, ID);
-}
-
-rdv *trouverrdv(rdv *head, int num) {
-    rdv *current = head;
-    while (current != NULL) {
-        if (current->numero == num) return current;
-        current = current->suivant;
-    }
-    return NULL;
-}
-
-// OPTION : Verification de disponibilite du creneau
-
-int creneauOccupe(rdv *head, const char *date, const char *heure) {
-    rdv *current = head;
-    while (current != NULL) {
-        if (strcmp(current->date, date) == 0 && strcmp(current->heure, heure) == 0) {
-            return 1;
-        }
-        current = current->suivant;
-    }
-    return 0;
-}
-
-int rdvexiste(rdv *head, int id, const char *date, const char *heure) {
-    rdv *current = head;
-    while (current != NULL) {
-        if (current->ID == id && strcmp(current->date, date) == 0 && strcmp(current->heure, heure) == 0) {
-            return 1;
-        }
-        current = current->suivant;
-    }
-    return 0;
-}
-
-// GESTION DES PATIENTS
-
-void ajoutpatient(patient **head) {
-    printf("\n--- AJOUTER UN NOUVEAU PATIENT ---\n");
-    patient *newpatient = malloc(sizeof(patient));
-    if (newpatient == NULL) {
-        printf("  [!] Erreur d'allocation memoire !\n");
-        return;
-    }
-
-    printf("Entrer l'ID du patient (nombre unique) : ");
-    newpatient->ID = lireEntier();
-    if (newpatient->ID <= 0) {
-        printf("  [!] Erreur : L'ID doit etre un nombre positif !\n");
-        free(newpatient);
-        return;
-    }
-
-    patient *result = recherpatient(*head, newpatient->ID);
-    if (result != NULL) {
-        printf("  [!] Erreur : Cet ID (%d) existe deja pour le patient %s %s !\n",
-               newpatient->ID, result->nom, result->prenom);
-        free(newpatient);
-        return;
-    }
-
-    printf("Entrer le nom du patient : ");
-    lire(newpatient->nom, sizeof(newpatient->nom));
-    while (strlen(newpatient->nom) == 0) {
-        printf("  [!] Le nom ne peut pas etre vide. Reessayez : ");
-        lire(newpatient->nom, sizeof(newpatient->nom));
-    }
-
-    printf("Entrer le prenom du patient : ");
-    lire(newpatient->prenom, sizeof(newpatient->prenom));
-    while (strlen(newpatient->prenom) == 0) {
-        printf("  [!] Le prenom ne peut pas etre vide. Reessayez : ");
-        lire(newpatient->prenom, sizeof(newpatient->prenom));
-    }
-
-    saisirDateNaissance("Entrer la date de naissance (JJ/MM/AAAA) : ", newpatient->datenaissance);
-    saisirTelephone("Entrer le numero de telephone (10 chiffres) : ", newpatient->telephone);
-
-    newpatient->next = *head;
-    *head = newpatient;
-
-    printf("\n  [+] Patient #%d (%s %s, %d ans) ajoute avec succes !\n",
-           newpatient->ID, newpatient->nom, newpatient->prenom, calculerAge(newpatient->datenaissance));
-}
-
-// OPTION : Affichage sous forme de tableau formate avec age
-
-void afficherTableauPatients(patient *head) {
-    if (head == NULL) {
-        printf("\n  [i] Aucun patient enregistre dans la clinique.\n");
-        return;
-    }
-    printf("\n+-----+----------------------+----------------------+-----+------------+------------+\n");
-    printf("| %-3s | %-20s | %-20s | %-3s | %-10s | %-10s |\n", "ID", "Nom", "Prenom", "Age", "Date Naiss", "Telephone");
-    printf("+-----+----------------------+----------------------+-----+------------+------------+\n");
-    patient *current = head;
-    while (current != NULL) {
-        int age = calculerAge(current->datenaissance);
-        printf("| %-3d | %-20s | %-20s | %-3d | %-10s | %-10s |\n",
-               current->ID, current->nom, current->prenom, age, current->datenaissance, current->telephone);
-        current = current->next;
-    }
-    printf("+-----+----------------------+----------------------+-----+------------+------------+\n");
-}
-
-// OPTION : Tri des patients par ordre alphabetique (A-Z) directement sur la liste chainee
-
-void trierPatientsParNom(patient *head) {
-    if (head == NULL || head->next == NULL) {
-        printf("\n  [i] Liste vide ou ne contenant qu'un seul patient (deja triee).\n");
-        return;
-    }
-    int permute;
-    patient *courant;
-    patient *dernier = NULL;
-
-    do {
-        permute = 0;
-        courant = head;
-        while (courant->next != dernier) {
-            int cmp = strcmp(courant->nom, courant->next->nom);
-            if (cmp > 0 || (cmp == 0 && strcmp(courant->prenom, courant->next->prenom) > 0)) {
-                int tempID = courant->ID;
-                char tempNom[50], tempPrenom[50], tempDate[11], tempTel[20];
-                strcpy(tempNom, courant->nom);
-                strcpy(tempPrenom, courant->prenom);
-                strcpy(tempDate, courant->datenaissance);
-                strcpy(tempTel, courant->telephone);
-
-                courant->ID = courant->next->ID;
-                strcpy(courant->nom, courant->next->nom);
-                strcpy(courant->prenom, courant->next->prenom);
-                strcpy(courant->datenaissance, courant->next->datenaissance);
-                strcpy(courant->telephone, courant->next->telephone);
-
-                courant->next->ID = tempID;
-                strcpy(courant->next->nom, tempNom);
-                strcpy(courant->next->prenom, tempPrenom);
-                strcpy(courant->next->datenaissance, tempDate);
-                strcpy(courant->next->telephone, tempTel);
-
-                permute = 1;
-            }
-            courant = courant->next;
-        }
-        dernier = courant;
-    } while (permute);
-
-    printf("\n  [+] Liste des patients triee avec succes par ordre alphabetique (A-Z) !\n");
-    afficherTableauPatients(head);
-}
-
-void display(patient *head) {
-    afficherTableauPatients(head);
-    if (head != NULL && head->next != NULL) {
-        printf("\nVoulez-vous trier cette liste par ordre alphabetique (A-Z) ? (1 = Oui / 0 = Non) : ");
-        int rep = lireEntier();
-        if (rep == 1) {
-            trierPatientsParNom(head);
-        }
-    }
-}
-
-// OPTION : Rechercher un patient (Detection automatique : par ID ou par Nom)
-
-void rechercherPatient(patient *head) {
-    if (head == NULL) {
-        printf("\n  [!] Aucun patient enregistre.\n");
-        return;
-    }
-    char saisie[50];
-    printf("\n--- RECHERCHER UN PATIENT ---\n");
-    printf("Entrer l'ID ou le Nom du patient a rechercher : ");
-    lire(saisie, sizeof(saisie));
-    if (strlen(saisie) == 0) return;
-
-    int estID = 1;
-    for (int i = 0; saisie[i] != '\0'; i++) {
-        if (!isdigit((unsigned char)saisie[i])) {
-            estID = 0;
-            break;
-        }
-    }
-
-    if (estID) {
-        int id = atoi(saisie);
-        patient *result = recherpatient(head, id);
-        if (result != NULL) {
-            printf("\n========================================\n");
-            printf("         DOSSIER DU PATIENT #%d\n", result->ID);
-            printf("========================================\n");
-            printf("  Nom               : %s\n", result->nom);
-            printf("  Prenom            : %s\n", result->prenom);
-            printf("  Age               : %d ans\n", calculerAge(result->datenaissance));
-            printf("  Date de naissance : %s\n", result->datenaissance);
-            printf("  Telephone         : %s\n", result->telephone);
-            printf("========================================\n");
-        } else {
-            printf("  [!] Aucun patient trouve avec l'ID %d !\n", id);
-        }
-    } else {
-        patient *current = head;
-        int compteur = 0;
-        printf("\nResultats de la recherche pour \"%s\" :\n", saisie);
-        while (current != NULL) {
-            if (memeTexte(current->nom, saisie)) {
-                int age = calculerAge(current->datenaissance);
-                printf("  -> ID: %d | Nom: %s | Prenom: %s | Age: %d ans | Date Naiss: %s | Tel: %s\n",
-                       current->ID, current->nom, current->prenom, age, current->datenaissance, current->telephone);
-                compteur++;
-            }
-            current = current->next;
-        }
-
-        if (compteur == 0) {
-            printf("  [!] Aucun patient trouve avec le nom \"%s\".\n", saisie);
-            return;
-        }
-
-        if (compteur > 1) {
-            printf("\n  [i] Plusieurs patients portent ce nom.\n");
-            printf("Entrer l'ID precis du patient : ");
-            int idRecherche = lireEntier();
-
-            patient *result = recherpatient(head, idRecherche);
-            if (result == NULL || !memeTexte(result->nom, saisie)) {
-                printf("  [!] ID invalide ou ne correspondant pas au nom recherche.\n");
-                return;
-            }
-
-            printf("\n========================================\n");
-            printf("         DOSSIER PATIENT #%d\n", result->ID);
-            printf("========================================\n");
-            printf("  Nom               : %s\n", result->nom);
-            printf("  Prenom            : %s\n", result->prenom);
-            printf("  Age               : %d ans\n", calculerAge(result->datenaissance));
-            printf("  Date de naissance : %s\n", result->datenaissance);
-            printf("  Telephone         : %s\n", result->telephone);
-            printf("========================================\n");
-        }
-    }
-}
-
-void modifierpatient(patient *head) {
-    if (head == NULL) {
-        printf("\n  [!] Aucun patient a modifier dans la liste.\n");
-        return;
-    }
-    printf("\n--- MODIFIER UN DOSSIER PATIENT ---\n");
-    printf("Entrer l'ID du patient a modifier : ");
-    int id = lireEntier();
-
-    patient *result = recherpatient(head, id);
-    if (result == NULL) {
-        printf("  [!] Erreur : Patient avec l'ID %d introuvable !\n", id);
-        return;
-    }
-
-    printf("Patient actuel : %s %s | Date Naiss : %s (%d ans) | Tel : %s\n",
-           result->nom, result->prenom, result->datenaissance, calculerAge(result->datenaissance), result->telephone);
-
-    printf("\nQue souhaitez-vous modifier ?\n");
-    printf("1. Nom\n");
-    printf("2. Prenom\n");
-    printf("3. Date de naissance\n");
-    printf("4. Numero de telephone\n");
-    printf("5. Toutes les informations\n");
-    printf("Votre choix : ");
-    int ch = lireEntier();
-
-    if (ch == 1 || ch == 5) {
-        printf("Nouveau nom : ");
-        lire(result->nom, sizeof(result->nom));
-    }
-    if (ch == 2 || ch == 5) {
-        printf("Nouveau prenom : ");
-        lire(result->prenom, sizeof(result->prenom));
-    }
-    if (ch == 3 || ch == 5) {
-        saisirDateNaissance("Nouvelle date de naissance (JJ/MM/AAAA) : ", result->datenaissance);
-    }
-    if (ch == 4 || ch == 5) {
-        saisirTelephone("Nouveau numero de telephone (10 chiffres) : ", result->telephone);
-    }
-
-    printf("\n  [+] Dossier du patient #%d mis a jour avec succes !\n", result->ID);
-}
 
 void annulerRdvPatient(appointment **head, int patientID) {
     appointment *current = *head;
@@ -858,6 +314,7 @@ void proposerProchainCreneau(rdv **headRDV, patient *headPatient) {
            numRDV, p->nom, p->prenom, date, creneauTrouve);
 }
 
+
 // OPTION : Menu pour programmer un rendez-vous (Libre, Aujourd'hui, Prochain creneau)
 
 void menuProgrammerRDV(rdv **headRDV, patient *headPatient) {
@@ -900,6 +357,202 @@ void annulerrdv(rdv **headrdv) {
     free(cible);
     printf("\n  [-] Rendez-vous #%d annule avec succes !\n", num);
 }
+
+// horaire de travail de cabinet 
+#define heure_debut 8
+#define heure_fin 18
+// outils de saisie
+
+void lire(char*dest,int taille){
+if(fgets(dest,taille,stdin)==NULL){
+dest[0]='\0';
+return;
+}
+dest[strcspn(dest,"\n")]='\0';
+}
+int lireEntier(void){
+char buf[50];
+lire(buf,sizeof(buf));
+return(int)strtol(buf,NULL,10);
+}
+// Comparer deux chaines de caracteres en ignorant les majuscules/minuscules
+
+int memeTexte(const char*a,const char*b){
+while(*a&&*b){
+if(tolower((unsigned char)*a)!=tolower((unsigned char)*b))return 0;
+a++;b++;
+}
+return*a==*b;
+}
+// check si la date et lheure sont valides 
+
+int dateValide(const char*dateStr,char*dest){
+if(strlen(dateStr)!=10)return 0;
+if(dateStr[2]!='/'||dateStr[5]!='/')return 0;
+int jour=atoi(dateStr);
+int mois=atoi(dateStr+3);
+int annee=atoi(dateStr+6);
+if(jour<1||jour>31||mois<1||mois>12||annee<1900)return 0;
+strcpy(dest,dateStr);
+return 1;
+}
+int heureValide(const char*heureStr,char*dest){
+if(strlen(heureStr)!=5)return 0;
+if(heureStr[2]!=':')return 0;
+int heures=atoi(heureStr);
+int minutes=atoi(heureStr+3);
+if(heures<0||heures>23||minutes<0||minutes>59)return 0;
+strcpy(dest,heureStr);
+return 1;
+}
+// comparer les dates et les heures pour savoir si le rdv est dans les horaires de travail 
+int dans_horaire(const char*date,const char*heure){
+int heures=atoi(heure);
+int minutes=atoi(heure+3);
+if(heures<heure_debut||heures>heure_fin||(heures==heure_fin&&minutes>0))
+return 0;
+return 1;
+}
+// converetir une date et une heure en nomnbre pour les comparer
+int cleDate(const char*d){
+int j,m,a;
+sscanf(d,"%d/%d/%d",&j,&m,&a);
+return a*10000+m*100+j;
+}
+// converetr en minutes so we can les comparer 
+int cleHeure(const char*h){
+int hh,mm;
+sscanf(h,"%d:%d",&hh,&mm);
+return hh*60+mm;
+}
+void saisirDate(const char*message,char*dest){
+char saisie[50];
+while(1){
+printf("%s",message);
+lire(saisie,sizeof(saisie));
+if(dateValide(saisie,dest))return;
+printf("Date invalide (format JJ/MM/AAAA).\n");
+}
+}
+void saisirHeure(const char*message,char*dest){
+char saisie[50];
+while(1){
+printf("%s",message);
+lire(saisie,sizeof(saisie));
+if(heureValide(saisie,dest))return;
+printf("Heure invalide (HH:MM, de 08:00 a 18:00, par pas de 30 min).\n");
+}
+}
+
+// 5. Faire un rendez-vous
+// rechercher un rdv par son num unique dans la liste chainee de rdv
+rdv*trouverrdv(rdv*head,int num){
+rdv*current=head;
+while(current!=NULL){
+if(current->numero==num)return current;
+current=current->suivant;
+}
+return NULL;
+}
+// verfying si un rdv existe deja pour un patient a une date et heure donnee
+int rdvexiste(rdv*head,int id,const char*date,const char*heure){
+rdv*current=head;
+while(current!=NULL){
+if(current->ID==id&&strcmp(current->date,date)==0&&strcmp(current->heure,heure)==0)return 1;
+current=current->suivant;
+}
+return 0;
+}
+// inserer un rdv dans la liste dune maniere triee par date et heure
+void insererrdv(rdv**head,rdv*nouveau){
+int kd=cleDate(nouveau->date),kh=cleHeure(nouveau->heure);
+if(*head==NULL||kd<cleDate((*head)->date)||(kd==cleDate((*head)->date)&&kh<cleHeure((*head)->heure))){
+nouveau->suivant=*head;
+*head=nouveau;
+return;
+}
+rdv*current=*head;
+while(current->suivant!=NULL&&(cleDate(current->suivant->date)<kd||(cleDate(current->suivant->date)==kd&&cleHeure(current->suivant->heure)<=kh))){
+current=current->suivant;
+}
+nouveau->suivant=current->suivant;
+current->suivant=nouveau;
+}
+// Détache un rendez-vous de la liste sans libérer sa mémoire (utile pour le déplacer) 
+void detacherRdv(rdv**head,rdv*cible){
+rdv*current=*head,*prev=NULL;
+while(current!=NULL&&current!=cible){
+prev=current;
+current=current->suivant;
+}
+if(current==NULL)return;
+if(prev==NULL)*head=current->suivant;
+else prev->suivant=current->suivant;
+current->suivant=NULL;
+}
+// planning des rdv 
+void ajoutrdv(rdv**head,patient*patients){
+rdv*nouveau=malloc(sizeof(rdv));
+if(!nouveau){
+printf("erreur d'allocation de memoire\n");
+return;
+}
+printf("ID du patient : ");
+nouveau->ID=lireEntier();
+if(!trouverPatient(patients,nouveau->ID)){
+printf("Patient introuvable.\n");
+free(nouveau);
+return;
+}
+printf("Numero du rdv : ");
+nouveau->numero=lireEntier();
+if(trouverrdv(*head,nouveau->numero)){
+printf("Ce numero de rdv existe deja.\n");
+free(nouveau);
+return;
+}
+saisirDate("Date du rdv (JJ/MM/AAAA) : ",nouveau->date);
+saisirHeure("Heure du rdv (HH:MM) : ",nouveau->heure);
+if(!dans_horaire(nouveau->date,nouveau->heure)){
+printf("Hors des horaires de travail (08:00 a 18:00).\n");
+free(nouveau);
+return;
+}
+if(rdvexiste(*head,nouveau->ID,nouveau->date,nouveau->heure)){
+printf("Un rdv existe deja pour ce patient a cette date et heure.\n");
+free(nouveau);
+return;
+}
+printf("Raison du rdv : ");
+lire(nouveau->raison,sizeof(nouveau->raison));
+nouveau->suivant=NULL;
+insererrdv(head,nouveau);
+printf("Rendez-vous ajoute avec succes.\n");
+}
+// 6. Annuler (supprimer) un rendez-vous
+void annulerrdv(rdv**headrdv){
+printf("Numero du rendez-vous a annuler : ");
+int num=lireEntier();
+rdv*cible=trouverrdv(*headrdv,num);
+if(cible==NULL){
+printf("Rendez-vous introuvable.\n");
+return;
+}
+detacherRdv(headrdv,cible);
+free(cible);
+printf("Rendez-vous annule avec succes.\n");
+}
+
+
+
+
+
+// ================= PARTIE 3 : AMI 2 (Qst 7, 8 et 9) =================
+
+// ----------------------
+// Qst 7
+// ----------------------
+
 
 void modifierRDV(ListeRDV l_rdv) {
     if (l_rdv == NULL) {
