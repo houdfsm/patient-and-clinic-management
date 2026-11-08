@@ -900,6 +900,7 @@ void annulerrdv(rdv **headrdv) {
     free(cible);
     printf("\n  [-] Rendez-vous #%d annule avec succes !\n", num);
 }
+// part emy
 
 void modifierRDV(ListeRDV l_rdv) {
     if (l_rdv == NULL) {
@@ -1475,7 +1476,7 @@ void afficherMenu(void) {
 }
 
 // PROGRAMME PRINCIPAL
-
+// PROGRAMME PRINCIPALggg
 int main(void) {
     patient *headpatient = NULL;
     int choix;

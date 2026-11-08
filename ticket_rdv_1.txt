@@ -1,0 +1,18 @@
+************************************************************
+*               CLINIQUE MEDICALE USTHB                    *
+*            TICKET DE RENDEZ-VOUS MEDICAL                 *
+************************************************************
+  Numero de RDV    : #1
+  Patient ID       : 1
+  Nom & Prenom     : EZZ izzy
+  Age              : 20 ans
+  Telephone        : 0542801105
+  --------------------------------------------------------
+  Date prevue      : 05/11/2026
+  Heure            : 12:30
+  Motif            : urgence
+  --------------------------------------------------------
+  Consignes :
+  - Priere de vous presenter 15 minutes a l'avance.
+  - En cas d'empechement, merci d'annuler au moins 24h avant.
+************************************************************
